@@ -1,3 +1,3 @@
-FormatCStream = require './format-c-stream'
+FormatCStream = require "#{__dirname}/format-c-stream"
 
-process.stdin.pipe(new SimpleCStream).pipe(process.stdout)
+process.stdin.pipe(new FormatCStream).pipe(process.stdout)

@@ -51,6 +51,7 @@ FormatCStream.prototype._transform = (chunk, enc, cb) ->
     .replace(/\-\-\s+(\w)/g, (str, g1) -> "--#{g1}") # predec
     .replace(/\+\+\s+(\w)/g, (str, g1) -> "++#{g1}") # preinc
     # TODO: add indentation by tabs/spaces according to bracketing
+    # TODO: only allow newlines after (,{,[,; (more?)
     ))
   cb?()
 
