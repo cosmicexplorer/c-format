@@ -9,6 +9,7 @@ FormatCStream = ->
 
   @delimiterStack = []
   @prevChar = ""
+  @indentationString = "\t"
 
   cb = =>
     @emit 'end'
@@ -40,7 +41,7 @@ getClosingDelim = (openDelim) ->
     when "{" then "}"
 
 # all these regexes are length-bound by a certain amount (i believe 3 is the
-# maximum currently)
+# maximum currently). don't forget to add _flush to flush out the buffer!
 interstitialBufferLength = 12
 
 # ' < '|'< a...'
@@ -54,10 +55,12 @@ FormatCStream.prototype._transform = (chunk, enc, cb) ->
     .replace(/^\s+([^\s])/g, (str, g1) -> "#{g1}")
     # no tabs or anything weird
     .replace(/(\s)/g, (str, g1) ->
-      if g1 == "\n"
+      if g1 is "\n"
         return "\n"
       else
         return " ")
+    # remove multiple newlines
+    .replace(/\n+/g, "\n")
     # space after common punctuation characters
     .replace(/([\);=\-<>+,\{\}\[\]])(\w)/g, (str, g1, g2) -> "#{g1} #{g2}")
     # space before common punctuation characters
@@ -80,28 +83,33 @@ FormatCStream.prototype._transform = (chunk, enc, cb) ->
     .replace(/\+\+\s+(\w)/g, (str, g1) -> "++#{g1}") # preinc
     # no spaces before parens
     .replace(/\s+\(/g, "(")
-    # TODO: add indentation by tabs/spaces according to bracketing
     # will always have space after
     .replace(/([\{;])[^\n]/g, (str, g1, g2) -> "#{g1}\n")
     .replace(/([^\n])\}/g, (str, g1) -> "\n}")
 
-  # TODO: move the indentation code to a new stream
-  # out = []
-  # for c in str
-  #   if @prevChar == "\n"
-  #     for i in [0..(@delimiterStack.length - 1)] by 1
-  #       # add levels of indentation
-  #       out.push " "
-  #   if isOpenDelim c
-  #     @delimiterStack.push c
-  #   else if isCloseDelim c and
-  #           getClosingDelim(@delimiterStack.pop()) != c
-  #     @emit 'error',
-  #     "Your delimiters aren't matched correctly and this won't compile."
-  #   out.push c
-  #   @prevChar = c
+  # TODO: add buffers; the removal of newlines is dependent on this since each
+  # entry into the stream is a line when read from stdin
 
-  @push(new Buffer(str))
+  out = []
+  for c in str
+    if @prevChar is "\n"
+      if isCloseDelim c
+        for i in [0..(@delimiterStack.length - 2)] by 1
+          out.push @indentationString
+      else
+        for i in [0..(@delimiterStack.length - 1)] by 1
+          # add levels of indentation
+          out.push @indentationString
+    if isOpenDelim c
+      @delimiterStack.push c
+    else if isCloseDelim c
+      if getClosingDelim(@delimiterStack.pop()) isnt c
+        @emit 'error',
+        "Your delimiters aren't matched correctly and this won't compile."
+    out.push c
+    @prevChar = c
+
+  @push(new Buffer(out.join("")))
   cb?()
 
 module.exports = FormatCStream
