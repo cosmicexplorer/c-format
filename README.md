@@ -31,4 +31,4 @@ objectStream.on('end', function(){
 
 # LICENSE
 
-GPLv3
+GPL v3
