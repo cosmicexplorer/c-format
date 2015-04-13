@@ -6,6 +6,10 @@ FormatCStream = ->
     return new FormatCStream
   else
     Transform.call @
+
+  @delimiterStack = []
+  @prevChar = ""
+
   cb = =>
     @emit 'end'
   @on 'pipe', (src) =>
@@ -15,9 +19,33 @@ FormatCStream = ->
 
 util.inherits FormatCStream, Transform
 
+isOpenDelim = (c) ->
+  switch c
+    when "(" then true
+    when "[" then true
+    when "{" then true
+    else false
+
+isCloseDelim = (c) ->
+  switch c
+    when "}" then true
+    when "]" then true
+    when ")" then true
+    else false
+
+getClosingDelim = (openDelim) ->
+  switch openDelim
+    when "(" then ")"
+    when "[" then "]"
+    when "{" then "}"
+
+# all these regexes are length-bound by a certain amount (i believe 3 is the
+# maximum currently)
+interstitialBufferLength = 12
+
+# ' < '|'< a...'
 FormatCStream.prototype._transform = (chunk, enc, cb) ->
   str = chunk.toString()
-  @push(new Buffer(str
     # no trailing whitespace
     .replace(/([^\s])\s+\n/g, (str, g1) -> "#{g1}\n")
     # no more than one space in between anything
@@ -33,7 +61,7 @@ FormatCStream.prototype._transform = (chunk, enc, cb) ->
     # space after common punctuation characters
     .replace(/([\);=\-<>+,\{\}\[\]])(\w)/g, (str, g1, g2) -> "#{g1} #{g2}")
     # space before common punctuation characters
-    .replace(/(\w)([\(=\-+\{\}\[\]])/g, (str, g1, g2) -> "#{g1} #{g2}")
+    .replace(/(\w)([=\-+\{\}\[\]])/g, (str, g1, g2) -> "#{g1} #{g2}")
     # space after single (not double!) colon
     .replace(/([^:]):([^\s])/g, (str, g1, g2) -> "#{g1}:#{g2}")
     # NO space after double colon
@@ -50,9 +78,29 @@ FormatCStream.prototype._transform = (chunk, enc, cb) ->
     .replace(/(\w)\s+\+\+/g, (str, g1) -> "#{g1}++") # postinc
     .replace(/\-\-\s+(\w)/g, (str, g1) -> "--#{g1}") # predec
     .replace(/\+\+\s+(\w)/g, (str, g1) -> "++#{g1}") # preinc
+    # no spaces before parens
+    .replace(/\s+\(/g, "(")
     # TODO: add indentation by tabs/spaces according to bracketing
-    # TODO: only allow newlines after (,{,[,; (more?)
-    ))
+    # will always have space after
+    .replace(/([\{;])[^\n]/g, (str, g1, g2) -> "#{g1}\n")
+    .replace(/([^\n])\}/g, (str, g1) -> "\n}")
+
+  out = []
+  for c in str
+    if @prevChar == "\n"
+      for i in [0..(@delimiterStack.length -1)] by 1
+        # add levels of indentation
+        out.push " "
+    if isOpenDelim c
+      @delimiterStack.push c
+    else if isCloseDelim c and
+            getCloseDelim(@delimiterStack.pop()) != c
+      @emit 'error',
+      "Your delimiters aren't matched correctly and this won't compile."
+    out.push c
+    @prevChar = c
+
+  @push(new Buffer(out.join ""))
   cb?()
 
 module.exports = FormatCStream
