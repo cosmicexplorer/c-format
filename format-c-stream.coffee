@@ -20,6 +20,9 @@ FormatCStream = ->
 
 util.inherits FormatCStream, Transform
 
+leadingWhitespaceRegex = /^\s+/g
+trailingWhitespaceRegex = /\s+$/g
+
 isOpenDelim = (c) ->
   switch c
     when "(" then true
@@ -45,8 +48,8 @@ getClosingDelim = (openDelim) ->
 interstitialBufferLength = 12
 
 # ' < '|'< a...'
-FormatCStream.prototype._transform = (chunk, enc, cb) ->
-  str = chunk.toString()
+baseTransformFunc = (str) ->
+  str
     # no trailing whitespace
     .replace(/([^\s])\s+\n/g, (str, g1) -> "#{g1}\n")
     # no more than one space in between anything
@@ -62,7 +65,7 @@ FormatCStream.prototype._transform = (chunk, enc, cb) ->
     # remove multiple newlines
     .replace(/\n+/g, "\n")
     # space after common punctuation characters
-    .replace(/([\);=\-<>+,\{\}\[\]])(\w)/g, (str, g1, g2) -> "#{g1} #{g2}")
+    .replace(/([\)=\-<>+,\{\}\[\]])(\w)/g, (str, g1, g2) -> "#{g1} #{g2}")
     # space before common punctuation characters
     .replace(/(\w)([=\-+\{\}\[\]])/g, (str, g1, g2) -> "#{g1} #{g2}")
     # space after single (not double!) colon
@@ -86,9 +89,24 @@ FormatCStream.prototype._transform = (chunk, enc, cb) ->
     # will always have space after
     .replace(/([\{;])[^\n]/g, (str, g1, g2) -> "#{g1}\n")
     .replace(/([^\n])\}/g, (str, g1) -> "\n}")
+    # no space before semicolon
+    .replace(/\s+;/g, ";")
+    # move template argument
+    .replace(/([^\s]+)\s+<([^>]*)>/g, (str, g1, g2) ->
+      if g1 isnt "template"
+        "#{g1}<#{g2}>"
+      else
+        "#{g1} <#{g2}>")
+    # keep template args cuddled within <>
+    .replace(/<\s*([^>]*)\s*>/g, (str, g1) ->
+      res = g1.replace(leadingWhitespaceRegex, "")
+        .replace(trailingWhitespaceRegex, "")
+      "<#{res}>")
 
+FormatCStream.prototype._transform = (chunk, enc, cb) ->
   # TODO: add buffers; the removal of newlines is dependent on this since each
   # entry into the stream is a line when read from stdin
+  str = baseTransformFunc chunk.toString()
 
   out = []
   for c in str
@@ -103,6 +121,7 @@ FormatCStream.prototype._transform = (chunk, enc, cb) ->
     if isOpenDelim c
       @delimiterStack.push c
     else if isCloseDelim c
+      # for some reason short-circuit evaluation isn't working here...
       if getClosingDelim(@delimiterStack.pop()) isnt c
         @emit 'error',
         "Your delimiters aren't matched correctly and this won't compile."
@@ -111,5 +130,7 @@ FormatCStream.prototype._transform = (chunk, enc, cb) ->
 
   @push(new Buffer(out.join("")))
   cb?()
+
+FormatCStream.prototype._flush = (chunk, enc, cb) ->
 
 module.exports = FormatCStream
