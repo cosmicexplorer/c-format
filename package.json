@@ -1,0 +1,39 @@
+{
+  "name": "c-format-stream",
+  "version": "0.0.0",
+  "description": "A Transform stream which formats C-like code.",
+  "main": "c-format-stream.coffee",
+  "bin": "./format-c",
+  "scripts": {
+    "prepublish": "make",
+    "test": "make check"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/cosmicexplorer/format-c.git"
+  },
+  "keywords": [
+    "stream",
+    "Transform",
+    "event",
+    "pipe",
+    "simple",
+    "format",
+    "c",
+    "beautify"
+  ],
+  "author": "Danny McClanahan <danieldmcclanahan@gmail.com>",
+  "license": "GPL v3",
+  "bugs": {
+    "url": "https://github.com/cosmicexplorer/format-c/issues"
+  },
+  "homepage": "https://github.com/cosmicexplorer/format-c",
+  "devDependencies": {
+    "coffee-script": "^1.9.1"
+  },
+  "dependencies": {
+    "commander": "^2.7.1",
+    "stream": "0.0.2",
+    "util": "^0.10.3"
+  }
+}
