@@ -85,22 +85,23 @@ FormatCStream.prototype._transform = (chunk, enc, cb) ->
     .replace(/([\{;])[^\n]/g, (str, g1, g2) -> "#{g1}\n")
     .replace(/([^\n])\}/g, (str, g1) -> "\n}")
 
-  out = []
-  for c in str
-    if @prevChar == "\n"
-      for i in [0..(@delimiterStack.length -1)] by 1
-        # add levels of indentation
-        out.push " "
-    if isOpenDelim c
-      @delimiterStack.push c
-    else if isCloseDelim c and
-            getCloseDelim(@delimiterStack.pop()) != c
-      @emit 'error',
-      "Your delimiters aren't matched correctly and this won't compile."
-    out.push c
-    @prevChar = c
+  # TODO: move the indentation code to a new stream
+  # out = []
+  # for c in str
+  #   if @prevChar == "\n"
+  #     for i in [0..(@delimiterStack.length - 1)] by 1
+  #       # add levels of indentation
+  #       out.push " "
+  #   if isOpenDelim c
+  #     @delimiterStack.push c
+  #   else if isCloseDelim c and
+  #           getClosingDelim(@delimiterStack.pop()) != c
+  #     @emit 'error',
+  #     "Your delimiters aren't matched correctly and this won't compile."
+  #   out.push c
+  #   @prevChar = c
 
-  @push(new Buffer(out.join ""))
+  @push(new Buffer(str))
   cb?()
 
 module.exports = FormatCStream
