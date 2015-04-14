@@ -24,6 +24,7 @@ if process.argv.indexOf("-h") isnt -1 or process.argv.length is 1
 
   -h show this help and exit
   -v show version number and exit
+  -n number of newlines to preserve
   -i type of indentation string
 
   For the '-i' argument, strings of type 'sN', where N is some positive integer,
@@ -58,6 +59,22 @@ else
     console.error err
     process.exit -1
   opts = {}
+  # get numNewlines arg
+  for i in [0..(process.argv.length - 1)] by 1
+    if process.argv[i].match /^\-n/g
+      nArg = i
+      break
+  if nArg
+    nArgStr = process.argv[nArg]
+    if nArgStr.substr("-n".length) is ""
+      nIndex = parseInt process.argv[nArg + 1]
+    else
+      nIndex = parseInt nArgStr.substr "-n".length
+    if nIndex > 0
+      opts.numNewlinesToPreserve = nIndex
+    else
+      console.error "Error: number of newlines should be >= 1, not #{nIndex}."
+      process.exit -1
   # get indentationString arg
   for i in [0..(process.argv.length - 1)] by 1
     if process.argv[i].match /^\-i/g

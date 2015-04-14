@@ -7,7 +7,13 @@ FormatCStream = (opts) ->
   else
     Transform.call @, opts
 
-  @prevChar = ""
+  @numNewlinesToPreserve = opts?.numNewlinesToPreserve or 2
+  @prevCharArrSize = 3
+  if @numNewlinesToPreserve > @prevCharArrSize
+    @prevCharArrSize = @numNewlinesToPreserve
+  @prevCharArr = []
+  for i in [1..@prevCharArrSize] by 1
+    @prevCharArr.push ""
   @indentationString = opts?.indentationString or "  "
   @delimiterStack = []
 
@@ -56,21 +62,19 @@ baseTransformFunc = (str) ->
     .replace(/\0/g, "")         # first remove null chars (lol)
     .replace(/^(#.*)$/gm, (str, g1) -> "#{g1}\0")
     # no trailing whitespace
-    .replace(/([^\s])\s+\n/g, (str, g1) -> "#{g1}\n")
+    .replace(/([^\s])\s+$/gm, (str, g1) -> "#{g1}")
     # no more than one space in between anything
     .replace(/([^\s])\s+([^\s])/g, (str, g1, g2) -> "#{g1} #{g2}")
-    # no spaces from left
-    .replace(/^\s+([^\s])/g, (str, g1) -> "#{g1}")
     # no tabs or anything weird
     .replace(/(\s)/g, (str, g1) ->
       if g1 is "\n"
         return "\n"
       else
         return " ")
-    # remove multiple newlines
-    .replace(/\n+/g, "\n")
     # space after common punctuation characters
-    .replace(/([\)=\-<>+,\{\}\[\]])(\w)/g, (str, g1, g2) -> "#{g1} #{g2}")
+    .replace(/([\)=\-<>+,\}\[\]])(\w)/g, (str, g1, g2) -> "#{g1} #{g2}")
+    # newline after open brace, close brace always
+    .replace(/\{\s*/g, "\{\n").replace(/\}\s*/g, "\}\n")
     # space before common punctuation characters
     .replace(/(\w)([=\-+\{\}\[\]])/g, (str, g1, g2) -> "#{g1} #{g2}")
     # space after single (not double!) colon
@@ -78,25 +82,24 @@ baseTransformFunc = (str) ->
     # NO space after double colon
     .replace(/::\s+([^\s])/g, (str, g1) -> "::#{g1}")
     # spaces before/after <, >
-    # assume <> or >< never appears
+    # assume >< never appears (<> is handled separately)
     .replace(/([^<>\s])([<>]){1}/g, (str, g1, g2) -> "#{g1} #{g2}")
     .replace(/([<>])([^<>\s])/g, (str, g1, g2) -> "#{g1} #{g2}")
     # NO spaces between two consecutive >>, <<
     .replace(/>\s+>/g, ">>").replace(/<\s+</g, "<<")
-    # no spaces between word characters and (, --, or ++
-    .replace(/(\w)\s+\(/g, (str, g1) -> "#{g1} (")
+    # no spaces between word characters and -- or ++
     .replace(/(\w)\s+\-\-/g, (str, g1) -> "#{g1}--") # postdec
     .replace(/(\w)\s+\+\+/g, (str, g1) -> "#{g1}++") # postinc
     .replace(/\-\-\s+(\w)/g, (str, g1) -> "--#{g1}") # predec
     .replace(/\+\+\s+(\w)/g, (str, g1) -> "++#{g1}") # preinc
     # no spaces before parens
     .replace(/\s+\(/g, "(")
-    # will always have space after
+    # newlines after common stuff
     .replace(/([\{;])([^\n])/g, (str, g1, g2) -> "#{g1}\n#{g2}")
     .replace(/([^\n])\}/g, (str, g1) -> "\n}")
     # no space before semicolon
     .replace(/\s+;/g, ";")
-    # move template argument
+    # template <>, not template<>
     .replace(/([^\s]+)\s+<([^\n>]*)>/g, (str, g1, g2) ->
       if g1 isnt "template"
         "#{g1}<#{g2}>"
@@ -109,6 +112,8 @@ baseTransformFunc = (str) ->
       "<#{res}>")
     # finally, put back those preprocessor defines
     .replace(/\s*\0\s*([^\s])/g, (str, g1) -> "\n#{g1}")
+    # postprocessing: remove leading whitespace before adding indentation
+    .replace(/^\s+/gm, "")
 
 FormatCStream.prototype._transform = (chunk, enc, cb) ->
   # TODO: add buffers; the removal of newlines is dependent on this since each
@@ -145,7 +150,7 @@ FormatCStream.prototype._transform = (chunk, enc, cb) ->
   #   @prevCharArr.push c
 
   # @push(new Buffer(out.join("")))
-  @push new Buffer(str)
+  @push str
   cb?()
 
 FormatCStream.prototype._flush = (chunk, enc, cb) ->
