@@ -7,7 +7,7 @@ FormatCStream = (opts) ->
   else
     Transform.call @, opts
 
-  @numNewlinesToPreserve = opts?.numNewlinesToPreserve or 2
+  @numNewlinesToPreserve = opts?.numNewlinesToPreserve + 1 or 2
   @prevCharArrSize = 3
   if @numNewlinesToPreserve > @prevCharArrSize
     @prevCharArrSize = @numNewlinesToPreserve
@@ -56,6 +56,14 @@ getClosingDelim = (openDelim) ->
 
 baseTransformFunc = (str) ->
   str
+    # preprocessing: remove all leading whitespace (this looks complex but
+    # simpler methods weren't working for some reason)
+    .replace(/^(\s+)/gm, (str, g1) ->
+      outArr = []
+      for ch in g1
+        if ch is "\n"
+          outArr.push ch
+      return outArr.join "")
     # first replace backslash-newlines
     .replace(/\\\n/g, "")
     # first remove null chars (lol)
@@ -71,12 +79,9 @@ baseTransformFunc = (str) ->
     # no trailing whitespace
     .replace(/([^\s])\s+$/gm, (str, g1) -> "#{g1}")
     # enforce newlines after access specifiers/gotos
-    .replace(/:$/gm, ":\0")
+    .replace(/:\s*$/gm, ":\0")
     # no more than one space in between anything
     .replace(/([^\s])\s+([^\s])/g, (str, g1, g2) -> "#{g1} #{g2}")
-    # newlines before and after /* and */ comments
-    .replace(/([^\n])(\/\*|\*\/)/g, (str, g1, g2) -> "#{g1}\n#{g2}")
-    .replace(/(\*\/|\/\*)([^\n])/g, (str, g1, g2) -> "#{g1}\n#{g2}")
     # no tabs or anything weird
     .replace(/(\s)/g, (str, g1) ->
       if g1 is "\n"
@@ -85,10 +90,8 @@ baseTransformFunc = (str) ->
         return " ")
     # space after common punctuation characters
     # note that this puts a space after every asterisk, always, even if it is a
-    # pointer
+    # pointer; this is one of the issues with a regex-based approach
     .replace(/([\)=\-<>\+\/\*,\[\]])([^\s])/g, (str, g1, g2) -> "#{g1} #{g2}")
-    # newline before/after open brace, close brace always
-    .replace(/([\{\}])([^\n\0\x01])/g, (str, g1, g2) -> "#{g1}\n#{g2}")
     # newline enforced only before close brace, not open
     # not sure why the spacing workaround here was necessary (as opposed to the
     # obvious ".replace(/([^\n])\}/g, "#{g1}\n}")"); think it's because
@@ -97,10 +100,11 @@ baseTransformFunc = (str) ->
     # space before common punctuation characters
     .replace(/([^\s])([=\-+\[\]])/g, (str, g1, g2) -> "#{g1} #{g2}")
     # space after single (not double!) colon
-    .replace(/([^:]):([^:])/g, (str, g1, g2) -> "#{g1}: #{g2}")
-    # one space before single colon, even for access specifiers and gotos
-    # this is one of the drawbacks of using a regex-based parser
+    .replace(/([^:]):([^:\s])/g, (str, g1, g2) -> "#{g1}: #{g2}")
+    # one space before single colon, except for access specifiers and gotos
     .replace(/([^\s:]):([^:])/g, (str, g1, g2) -> "#{g1} :#{g2}")
+    .replace(/([\n\0\x01])\s*(\w+)\s*:\s*([\n\0\x01])/g, (str, g1, g2, g3) ->
+      "#{g1}#{g2}:#{g3}")
     # NO space after double colon
     .replace(/::\s+([^\s])/g, (str, g1) -> "::#{g1}")
     # NO space before double colon, if preceded by token
@@ -119,13 +123,19 @@ baseTransformFunc = (str) ->
     .replace(/([^\s])\s+\+\+/g, (str, g1) -> "#{g1}++") # postinc
     .replace(/\-\-\s+([^\s])/g, (str, g1) -> "--#{g1}") # predec
     .replace(/\+\+\s+([^\s])/g, (str, g1) -> "++#{g1}") # preinc
-    # no spaces before parens
-    .replace(/\s+\(/g, "(")
-    # newlines after common stuff
-    .replace(/([\{;])([^\n\0\x01])/g, (str, g1, g2) -> "#{g1}\n#{g2}")
-    # .replace(/([^\n])\}/g, (str, g1) -> "#{g1}\n}")
+    # no spaces before parens except for built-in stuff
+    .replace(/(\w+)\s*\(/g, (str, g1) ->
+      console.error "---#{g1}---"
+      if g1 is "for" or
+         g1 is "while" or
+         g1 is "switch"
+        "#{g1} ("
+      else
+        "#{g1}(")
     # no space before semicolon
     .replace(/\s+;/g, ";")
+    # newline after open brace, close brace, semicolon
+    .replace(/([\{\};])([^\n\0\x01])/g, (str, g1, g2) -> "#{g1}\n#{g2}")
     # except NO space in between +=, -=, *=, /=
     .replace(/(.)([\+\-\*\/])\s+=/g, (str, g1, g2) ->
       if (g1 is "+" and g2 is "+") or
@@ -151,7 +161,14 @@ baseTransformFunc = (str) ->
     # and for //-comments
     .replace(/\x02/g, "//")
     # and for /**/-comments
-    .replace(/\x03/g, "/*").replace(/\x04/g, "*/")
+    .replace(/([^\n])\x03/g, (str, g1) -> "#{g1}\n/*")
+    .replace(/\x03([^\n])/g, (str, g1) -> "/*\n#{g1}")
+    .replace(/\n\x03/g, "\n/*")
+    .replace(/([^\n])\x04/g, (str, g1) -> "#{g1}\n*/")
+    .replace(/\x04([^\n])/g, (str, g1) -> "*/\n#{g1}")
+    .replace(/\x04/g, "*/\n")
+    # make opening brackets on next line (do this after null char replacement)
+    .replace(/([^\s])\s*\{/g, (str, g1) -> "#{g1}\n{")
     # postprocessing: remove leading whitespace before adding indentation
     .replace(/^(\s+)/gm, (str, g1) ->
       outArr = []
@@ -166,40 +183,42 @@ FormatCStream.prototype._transform = (chunk, enc, cb) ->
   str = baseTransformFunc chunk.toString()
 
   # let's do indentation!
-  # out = []
-  # for c in str
-  #   if @prevCharArr[@prevCharArr.length - 1] is "\n"
-  #     if c isnt "\n"
-  #       if isCloseDelim c
-  #         for i in [0..(@delimiterStack.length - 2)] by 1
-  #           out.push @indentationString
-  #       else
-  #         for i in [0..(@delimiterStack.length - 1)] by 1
-  #           # add levels of indentation
-  #           out.push @indentationString
-  #   if isOpenDelim c
-  #     @delimiterStack.push c
-  #   else if isCloseDelim c
-  #     # for some reason short-circuit evaluation isn't working here...
-  #     openingDelim = @delimiterStack.pop()
-  #     if getClosingDelim(openingDelim) isnt c
-  #       @emit 'error',
-  #       "Your delimiters aren't matched correctly and this won't compile."
-  #   tooManyNewlines = c is "\n"
-  #   for i in [1..@numNewlinesToPreserve] by 1
-  #     tooManyNewlines =
-  #       @prevCharArr[@prevCharArr.length - i] is "\n" and tooManyNewlines
-  #   if not tooManyNewlines
-  #     out.push c
-  #   @prevCharArr.shift
-  #   @prevCharArr.push c
+  out = []
+  for c in str
+    # we have verified in ctor that @prevCharArr.length > 0
+    if @prevCharArr[@prevCharArr.length - 1] is "\n"
+      if c isnt "\n"
+        if isCloseDelim c
+          for i in [0..(@delimiterStack.length - 2)] by 1
+            out.push @indentationString
+        else
+          for i in [0..(@delimiterStack.length - 1)] by 1
+            # add levels of indentation
+            out.push @indentationString
+    if isOpenDelim c
+      @delimiterStack.push c
+    else if isCloseDelim c
+      # for some reason short-circuit evaluation isn't working here...
+      openingDelim = @delimiterStack.pop()
+      if getClosingDelim(openingDelim) isnt c
+        @emit 'error',
+        "Your delimiters aren't matched correctly and this won't compile."
+    tooManyNewlines = c is "\n"
+    for i in [1..@numNewlinesToPreserve] by 1
+      tooManyNewlines =
+        @prevCharArr[@prevCharArr.length - i] is "\n" and tooManyNewlines
+    if not tooManyNewlines
+      out.push c
+    @prevCharArr.shift
+    @prevCharArr.push c
 
-  # @push out.join("")
-  @push str
+  @push out.join("")
+  # @push str
   cb?()
 
 FormatCStream.prototype._flush = (chunk, enc, cb) ->
-  @push "\n"
+  if @prevCharArr[@prevCharArr.length - 1] isnt "\n"
+    @push "\n"                  # file ends in newline!
   cb?()
 
 module.exports = FormatCStream
