@@ -59,10 +59,14 @@ baseTransformFunc = (str) ->
     # first replace backslash-newlines
     .replace(/\\\n/g, "")
     # then keep all #defines as they are (null chars added here, removed below)
-    .replace(/\0/g, "")         # first remove null chars (lol)
+    .replace(/[\0\x01\x02\x03\x04]/g, "") # first remove null chars (lol)
     .replace(/^(#.*)$/gm, (str, g1) -> "#{g1}\0")
-    # keep // comments on same line lol
-    .replace(/\/\/(.*)$/gm, (str, g1) -> "//#{g1}\0")
+    # keep // comments on same line lol, and replace with \x02
+    .replace(/\/\/(.*)$/gm, (str, g1) -> "\x02#{g1}\0")
+    # replace /* with \x03, and */ with \x04
+    .replace(/\/\*/g, "\x03").replace(/\*\//g, "\x04")
+    # keep all multiple-newlines as \x01 chars (to be removed later)
+    .replace(/\n\n/g, "\x01")
     # no trailing whitespace
     .replace(/([^\s])\s+$/gm, (str, g1) -> "#{g1}")
     # enforce newlines after access specifiers/gotos
@@ -79,17 +83,22 @@ baseTransformFunc = (str) ->
       else
         return " ")
     # space after common punctuation characters
-    .replace(/([\)=\-<>+,\[\]])(\w)/g, (str, g1, g2) -> "#{g1} #{g2}")
+    # note that this puts a space after every asterisk, always, even if it is a
+    # pointer
+    .replace(/([\)=\-<>\+\/\*,\[\]])([^\s])/g, (str, g1, g2) -> "#{g1} #{g2}")
     # newline before/after open brace, close brace always
     .replace(/([\{\}])([^\n])/g, (str, g1, g2) -> "#{g1}\n#{g2}")
-    .replace(/([^\n])([\{\}])/g, (str, g1, g2) -> "#{g1}\n#{g2}")
+    # newline enforced only before close brace, not open
+    # not sure why the spacing workaround here was necessary (as opposed to the
+    # obvious ".replace(/([^\n])\}/g, "#{g1}\n}")"); think it's because
+    # the spacing is getting fucked with later on, but not sure where
+    .replace(/([^\s]+)([\s]*)\}/g, (str, g1, g2) -> "#{g1}\n}")
     # space before common punctuation characters
-    .replace(/(\w)([=\-+\[\]])/g, (str, g1, g2) -> "#{g1} #{g2}")
+    .replace(/([^\s])([=\-+\[\]])/g, (str, g1, g2) -> "#{g1} #{g2}")
     # space after single (not double!) colon
-    .replace(/([^:]):([^\s:])/g, (str, g1, g2) -> "#{g1}: #{g2}")
-    # we are enforcing a space before every single colon, even if that colon is
-    # a goto or public/private specifier; this is one of the issues with a
-    # regex-based approach
+    .replace(/([^:]):([^:])/g, (str, g1, g2) -> "#{g1}: #{g2}")
+    # one space before single colon, even for access specifiers and gotos
+    # this is one of the drawbacks of using a regex-based parser
     .replace(/([^\s:]):([^:])/g, (str, g1, g2) -> "#{g1} :#{g2}")
     # NO space after double colon
     .replace(/::\s+([^\s])/g, (str, g1) -> "::#{g1}")
@@ -102,18 +111,27 @@ baseTransformFunc = (str) ->
     .replace(/([<>])([^<>\s])/g, (str, g1, g2) -> "#{g1} #{g2}")
     # NO spaces between two consecutive >>, <<
     .replace(/>\s+>/g, ">>").replace(/<\s+</g, "<<")
+    # no spaces between two consecutive ++, --
+    .replace(/\+\s+\+/g, "++").replace(/\-\s+\-/g, "--")
     # no spaces between word characters and -- or ++
-    .replace(/(\w)\s+\-\-/g, (str, g1) -> "#{g1}--") # postdec
-    .replace(/(\w)\s+\+\+/g, (str, g1) -> "#{g1}++") # postinc
-    .replace(/\-\-\s+(\w)/g, (str, g1) -> "--#{g1}") # predec
-    .replace(/\+\+\s+(\w)/g, (str, g1) -> "++#{g1}") # preinc
+    .replace(/([^\s])\s+\-\-/g, (str, g1) -> "#{g1}--") # postdec
+    .replace(/([^\s])\s+\+\+/g, (str, g1) -> "#{g1}++") # postinc
+    .replace(/\-\-\s+([^\s])/g, (str, g1) -> "--#{g1}") # predec
+    .replace(/\+\+\s+([^\s])/g, (str, g1) -> "++#{g1}") # preinc
     # no spaces before parens
     .replace(/\s+\(/g, "(")
     # newlines after common stuff
     .replace(/([\{;])([^\n])/g, (str, g1, g2) -> "#{g1}\n#{g2}")
-    .replace(/([^\n])\}/g, (str, g1) -> "#{g1}\n}")
+    # .replace(/([^\n])\}/g, (str, g1) -> "#{g1}\n}")
     # no space before semicolon
     .replace(/\s+;/g, ";")
+    # except NO space in between +=, -=, *=, /=
+    .replace(/(.)([\+\-\*\/])\s+=/g, (str, g1, g2) ->
+      if (g1 is "+" and g2 is "+") or
+         (g1 is "-" and g2 is "-")
+        "#{g1}#{g2} ="
+      else
+        "#{g1}#{g2}=")
     # template <>, not template<>
     .replace(/([^\s]+)\s+<([^\n>]*)>/g, (str, g1, g2) ->
       if g1 isnt "template"
@@ -127,8 +145,19 @@ baseTransformFunc = (str) ->
       "<#{res}>")
     # finally, put back those preprocessor defines
     .replace(/\s*\0\s*([^\s])/g, (str, g1) -> "\n#{g1}")
+    # now for multiple newlines
+    .replace(/\x01/g, "\n\n")
+    # and for //-comments
+    .replace(/\x02/g, "//")
+    # and for /**/-comments
+    .replace(/\x03/g, "/*").replace(/\x04/g, "*/")
     # postprocessing: remove leading whitespace before adding indentation
-    .replace(/^\s+/gm, "")
+    .replace(/^(\s+)/gm, (str, g1) ->
+      outArr = []
+      for ch in g1
+        if ch is "\n"
+          outArr.push ch
+      return outArr.join "")
 
 FormatCStream.prototype._transform = (chunk, enc, cb) ->
   # TODO: add buffers; the removal of newlines is dependent on this since each
