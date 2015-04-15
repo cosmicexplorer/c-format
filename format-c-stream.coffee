@@ -58,15 +58,16 @@ baseTransformFunc = (str) ->
   str
     # first replace backslash-newlines
     .replace(/\\\n/g, "")
+    # first remove null chars (lol)
+    .replace(/[\0\x01\x02\x03\x04]/g, "")
+    # keep all multiple-newlines as \x01 chars (to be removed later)
+    .replace(/\n\n/g, "\x01")
     # then keep all #defines as they are (null chars added here, removed below)
-    .replace(/[\0\x01\x02\x03\x04]/g, "") # first remove null chars (lol)
     .replace(/^(#.*)$/gm, (str, g1) -> "#{g1}\0")
     # keep // comments on same line lol, and replace with \x02
     .replace(/\/\/(.*)$/gm, (str, g1) -> "\x02#{g1}\0")
     # replace /* with \x03, and */ with \x04
     .replace(/\/\*/g, "\x03").replace(/\*\//g, "\x04")
-    # keep all multiple-newlines as \x01 chars (to be removed later)
-    .replace(/\n\n/g, "\x01")
     # no trailing whitespace
     .replace(/([^\s])\s+$/gm, (str, g1) -> "#{g1}")
     # enforce newlines after access specifiers/gotos
@@ -87,7 +88,7 @@ baseTransformFunc = (str) ->
     # pointer
     .replace(/([\)=\-<>\+\/\*,\[\]])([^\s])/g, (str, g1, g2) -> "#{g1} #{g2}")
     # newline before/after open brace, close brace always
-    .replace(/([\{\}])([^\n])/g, (str, g1, g2) -> "#{g1}\n#{g2}")
+    .replace(/([\{\}])([^\n\0\x01])/g, (str, g1, g2) -> "#{g1}\n#{g2}")
     # newline enforced only before close brace, not open
     # not sure why the spacing workaround here was necessary (as opposed to the
     # obvious ".replace(/([^\n])\}/g, "#{g1}\n}")"); think it's because
@@ -121,7 +122,7 @@ baseTransformFunc = (str) ->
     # no spaces before parens
     .replace(/\s+\(/g, "(")
     # newlines after common stuff
-    .replace(/([\{;])([^\n])/g, (str, g1, g2) -> "#{g1}\n#{g2}")
+    .replace(/([\{;])([^\n\0\x01])/g, (str, g1, g2) -> "#{g1}\n#{g2}")
     # .replace(/([^\n])\}/g, (str, g1) -> "#{g1}\n}")
     # no space before semicolon
     .replace(/\s+;/g, ";")
@@ -133,13 +134,13 @@ baseTransformFunc = (str) ->
       else
         "#{g1}#{g2}=")
     # template <>, not template<>
-    .replace(/([^\s]+)\s+<([^\n>]*)>/g, (str, g1, g2) ->
+    .replace(/([^\s]+)\s+<([^\n\0\x01>]*)>/g, (str, g1, g2) ->
       if g1 isnt "template"
         "#{g1}<#{g2}>"
       else
         "#{g1} <#{g2}>")
     # keep template args cuddled within <>
-    .replace(/<\s*([^\n>]*)\s*>/g, (str, g1) ->
+    .replace(/<\s*([^\n\0\x01>]*)\s*>/g, (str, g1) ->
       res = g1.replace(leadingWhitespaceRegex, "")
         .replace(trailingWhitespaceRegex, "")
       "<#{res}>")
