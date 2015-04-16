@@ -25,7 +25,8 @@ $(DRIVER): $(DEPS) $(OBJ)
 	@chmod +x $@
 
 obj/%.js: %.coffee
-	coffee -o obj -c $<
+	@./install_coffee_if_not.sh
+	coffee -o obj -bc $<
 
 $(DEPS):
 	@echo "Install required packages..."

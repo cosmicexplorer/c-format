@@ -2,7 +2,7 @@
   "name": "c-format-stream",
   "version": "0.0.0",
   "description": "A Transform stream which formats C-like code.",
-  "main": "c-format-stream.coffee",
+  "main": "obj/c-format-stream.js",
   "bin": "./format-c",
   "scripts": {
     "prepublish": "make",
