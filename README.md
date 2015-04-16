@@ -31,8 +31,8 @@ $ format-c -h
 ```javascript
 var FormatCStream = require('format-c-stream');
 var formattedStream = getReadableStreamSomehow().pipe(new FormatCStream({
-  numNewlinesToPreserve: 3,
-  indentationString: "\t"
+  numNewlinesToPreserve: 3, // cuts off after this. enter 0 to destroy all newlines
+  indentationString: "\t"   // use tabs for indentation
 }));
 
 // fires when stream has no more data

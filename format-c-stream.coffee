@@ -35,12 +35,17 @@ class FormatCStream extends Transform
     @interstitialBuffer = []
 
     # emit 'end' on end of input
-    cb = =>
+    cbEnd = =>
       @emit 'end'
+    # same for 'error'
+    cbError = (err) =>
+      @emit 'error'
     @on 'pipe', (src) =>
-      src.on 'end', cb
+      src.on 'end', cbEnd
+      src.on 'error', cbError
     @on 'unpipe', (src) =>
-      src.removeListener 'end', cb
+      src.removeListener 'end', cbEnd
+      src.removeListener 'error', cbError
 
   @leadingWhitespaceRegex: /^\s+/gm
   @trailingWhitespaceRegex: /\s+$/gm
