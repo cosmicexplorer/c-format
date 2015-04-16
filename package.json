@@ -1,6 +1,6 @@
 {
   "name": "c-format-stream",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "A Transform stream which formats C-like code.",
   "main": "obj/c-format-stream.js",
   "bin": {
@@ -34,8 +34,6 @@
     "coffee-script": "^1.9.1"
   },
   "dependencies": {
-    "commander": "^2.7.1",
     "stream": "0.0.2",
-    "util": "^0.10.3"
   }
 }
