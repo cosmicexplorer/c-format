@@ -8,15 +8,31 @@ class FormatCStream extends Transform
     else
       Transform.call @, opts
 
-    @numNewlinesToPreserve = opts?.numNewlinesToPreserve + 1 or 2
+    if opts?.numNewlinesToPreserve is 0
+      @noNewlines = true
+      @numNewlinesToPreserve = 0
+    else
+      @noNewlines = false
+      @numNewlinesToPreserve = opts?.numNewlinesToPreserve + 1 or 2
     @prevCharArrSize = 3
     if @numNewlinesToPreserve > @prevCharArrSize
       @prevCharArrSize = @numNewlinesToPreserve
     @prevCharArr = []
     for i in [1..@prevCharArrSize] by 1
-      @prevCharArr.push ""
+      @prevCharArr.push "\n"
     @indentationString = opts?.indentationString or "  "
     @delimiterStack = []
+
+    # process in blocks of top-level declarations:
+    # 1. preprocessor defines at top level
+    # 2. function definitions and namespace declarations
+    # 3. class/function declarations
+
+    # this is set so _transform knows when to break off each chunk and feed it
+    # into @baseTransformFunc and indentAndNewline
+    @blockStatus = null
+    # this contains the status of the stream saved from previous inputs
+    @interstitialBuffer = []
 
     # emit 'end' on end of input
     cb = =>
@@ -50,7 +66,7 @@ class FormatCStream extends Transform
       when "{" then "}"
       else null
 
-  @baseTransformFunc : (str) ->
+  baseTransformFunc : (str) ->
     str
       # preprocessing: remove all leading whitespace (this looks complex but
       # simpler methods weren't working for some reason)
@@ -64,18 +80,24 @@ class FormatCStream extends Transform
       .replace(/\\\n/g, "")
       # first remove null chars (lol)
       .replace(/[\0\x01\x02\x03\x04]/g, "")
-      # keep all multiple-newlines as \x01 chars (to be removed later)
-      .replace(/\n\n/g, "\x01")
       # then keep all #defines as is (null chars added here, removed later)
       .replace(/^(#.*)$/gm, (str, g1) -> "#{g1}\0")
       # keep // comments on same line lol, and replace with \x02
       .replace(/\/\/(.*)$/gm, (str, g1) -> "\x02#{g1}\0")
       # replace /* with \x03, and */ with \x04
       .replace(/\/\*/g, "\x03").replace(/\*\//g, "\x04")
+      # enforce newlines after access specifiers/gotos
+      .replace(/^\n\s*(\w+):\s*$/gm, (str, g1) -> "\n#{g1}:\0")
+      # keep all multiple-newlines as \x01 chars (to be removed later)
+      .replace(/\n\n/g, =>
+        if @noNewlines
+          " "
+        else
+          "\x01")
+      # kill newlines
+      .replace(/\n/g, " ")
       # no trailing whitespace
       .replace(/([^\s])\s+$/gm, (str, g1) -> "#{g1}")
-      # enforce newlines after access specifiers/gotos
-      .replace(/:\s*$/gm, ":\0")
       # no more than one space in between anything
       .replace(/([^\s])\s+([^\s])/g, (str, g1, g2) -> "#{g1} #{g2}")
       # no tabs or anything weird
@@ -88,8 +110,10 @@ class FormatCStream extends Transform
       # note that this puts a space after every asterisk, always, even if it is
       # a pointer; this is one of the issues with a regex-based approach
       .replace(/([\)=\-<>\+\/\*,\[\]])([^\s])/g, (str, g1, g2) -> "#{g1} #{g2}")
-      # NO space before paren
-      .replace(/\s+\)/g, ")")
+      # NO space inside paren
+      .replace(/\s+\)/g, ")").replace(/\(\s+/g, "(")
+      # NO space before comma
+      .replace(/\s+,/g, ",")
       # newline enforced only before close brace, not open
       # not sure why the spacing workaround here was necessary (as opposed to
       # the obvious ".replace(/([^\n])\}/g, "#{g1}\n}")"); think it's because
@@ -131,8 +155,6 @@ class FormatCStream extends Transform
           "#{g1}(")
       # no space before semicolon
       .replace(/\s+;/g, ";")
-      # newline after open brace, close brace, semicolon
-      .replace(/([\{\};])([^\n\0\x01])/g, (str, g1, g2) -> "#{g1}\n#{g2}")
       # except NO space in between +=, -=, *=, /=
       .replace(/(.)([\+\-\*\/])\s+=/g, (str, g1, g2) ->
         if (g1 is "+" and g2 is "+") or
@@ -151,19 +173,41 @@ class FormatCStream extends Transform
         res = g1.replace(FormatCStream.leadingWhitespaceRegex, "")
           .replace(FormatCStream.trailingWhitespaceRegex, "")
         "<#{res}>")
+      # newline after open brace, close brace, semicolon
+      .replace(/([\{\};])([^\n\0\x01])/g, (str, g1, g2) -> "#{g1}\n#{g2}")
       # finally, put back those preprocessor defines
-      .replace(/\s*\0\s*([^\s])/g, (str, g1) -> "\n#{g1}")
+      .replace(/\s*\0\s*([^\s]*)/g, (str, g1) -> "\n#{g1}")
       # now for multiple newlines
       .replace(/\x01/g, "\n\n")
       # and for //-comments
       .replace(/\x02/g, "//")
+      # midprocessing: remove leading whitespace that has crept in from earlier
+      .replace(/^(\s+)/gm, (str, g1) ->
+        outArr = []
+        for ch in g1
+          if ch is "\n"
+            outArr.push ch
+        outArr.join "")
       # and for /**/-comments
-      .replace(/([^\n])\x03/g, (str, g1) -> "#{g1}\n/*")
-      .replace(/\x03([^\n])/g, (str, g1) -> "/*\n#{g1}")
-      .replace(/\n\x03/g, "\n/*")
-      .replace(/([^\n])\x04/g, (str, g1) -> "#{g1}\n*/")
-      .replace(/\x04([^\n])/g, (str, g1) -> "*/\n#{g1}")
-      .replace(/\x04/g, "*/\n")
+      .replace(/\x03(.)/g, (str, g1) ->
+        next = ""
+        if g1 is "\n"
+          next = "\n"
+        else
+          next = "\n#{g1}"
+        return "/*#{next}")
+      .replace(/(.)\x04(.)/g, (str, g1, g2) ->
+        prev = ""
+        next = ""
+        if g1 is "\n"
+          prev = "\n"
+        else
+          prev = "#{g1}\n"
+        if g2 is "\n"
+          next = "\n"
+        else
+          next = "\n#{g2}"
+        "#{prev}*/#{next}")
       # make opening brackets on next line (do this after null char replacement)
       .replace(/([^\s])\s*\{/g, (str, g1) -> "#{g1}\n{")
       # postprocessing: remove leading whitespace before adding indentation
@@ -197,11 +241,14 @@ class FormatCStream extends Transform
         if FormatCStream.getClosingDelim(openingDelim) isnt c
           @emit 'error',
           "Your delimiters aren't matched correctly and this won't compile."
-      tooManyNewlines = c is "\n"
-      for i in [1..@numNewlinesToPreserve] by 1
-        tooManyNewlines =
-          @prevCharArr[@prevCharArr.length - i] is "\n" and tooManyNewlines
-      if not tooManyNewlines
+      if not @noNewlines
+        tooManyNewlines = c is "\n"
+        for i in [1..@numNewlinesToPreserve] by 1
+          tooManyNewlines =
+            @prevCharArr[@prevCharArr.length - i] is "\n" and tooManyNewlines
+        if not tooManyNewlines
+          out.push c
+      else
         out.push c
       @prevCharArr.shift
       @prevCharArr.push c
@@ -209,10 +256,50 @@ class FormatCStream extends Transform
 
   _transform : (chunk, enc, cb) ->
     str = chunk.toString()
-    @push(@indentAndNewline(FormatCStream.baseTransformFunc(str)))
+    c = ""
+    for i in [0..(str.length - 1)]
+      c = str.charAt(i)
+      @interstitialBuffer.push c
+      if @blockStatus is null
+        if c is "{"
+          @blockStatus =
+            type: "{"
+            num: 1
+        if c is "#"
+          @blockStatus =
+            type: "#"
+        if c is ";"
+          @push "\n" if @prevCharArr[@prevCharArr.length - 1] isnt "\n"
+          # @push "^__^"
+          @push(@indentAndNewline(@baseTransformFunc(
+            @interstitialBuffer.join(""))))
+          @blockStatus = null
+          @interstitialBuffer = []
+      else
+        if @blockStatus.type is "{"
+          if c is "}"
+            --@blockStatus.num
+          else if c is "{"
+            ++@blockStatus.num
+          if @blockStatus.num is 0
+            @push "\n" if @prevCharArr[@prevCharArr.length - 1] isnt "\n"
+            # @push "^__^"
+            @push(@indentAndNewline(@baseTransformFunc(
+              @interstitialBuffer.join(""))))
+            @blockStatus = null
+            @interstitialBuffer = []
+        else if @blockStatus.type is "#" and c is "\n"
+          @push "\n" if @prevCharArr[@prevCharArr.length - 1] isnt "\n"
+          # @push "^__^"
+          @push(@indentAndNewline(@baseTransformFunc(
+            @interstitialBuffer.join(""))))
+          @blockStatus = null
+          @interstitialBuffer = []
     cb?()
 
   _flush : (cb) ->
+    @push(@indentAndNewline(@baseTransformFunc(
+      @interstitialBuffer.join(""))))
     if @prevCharArr[@prevCharArr.length - 1] isnt "\n"
       @push "\n"                  # file ends in newline!
     cb?()

@@ -27,9 +27,11 @@ if process.argv.indexOf("-h") isnt -1 or process.argv.length is 1
   -n number of newlines to preserve
   -i type of indentation string
 
-  For the '-i' argument, strings of type 'sN', where N is some positive integer,
-  or 't' are accepted. The 'sN' type says to use N spaces for indentation, while
-  't' says to use tabs.
+  For the '-i' argument, strings of type 'sN', where N is some nonnegative
+  integer, or 't' are accepted. The 'sN' type says to use N spaces for
+  indentation, while 't' says to use tabs.
+
+  Example: format-c test.c -n4 -is3
   '''
   process.exit -1
 else if process.argv.indexOf("-v") isnt -1
@@ -70,10 +72,10 @@ else
       nIndex = parseInt process.argv[nArg + 1]
     else
       nIndex = parseInt nArgStr.substr "-n".length
-    if nIndex > 0
+    if nIndex >= 0
       opts.numNewlinesToPreserve = nIndex
     else
-      console.error "Error: number of newlines should be >= 1, not #{nIndex}."
+      console.error "Error: number of newlines should be >= 0, not #{nIndex}."
       process.exit -1
   # get indentationString arg
   for i in [0..(process.argv.length - 1)] by 1

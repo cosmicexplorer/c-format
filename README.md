@@ -8,25 +8,42 @@ A Transform stream to format C and C-like code.
 ## Command-line
 
 ```bash
-format-c FILE
+$ format-c -h
+
+  Usage: format-c INFILE [OUTFILE] [-hvni]
+
+  INFILE should be "-" for stdin. OUTFILE defaults to stdout.
+
+  -h show this help and exit
+  -v show version number and exit
+  -n number of newlines to preserve
+  -i type of indentation string
+
+  For the '-i' argument, strings of type 'sN', where N is some positive integer,
+  or 't' are accepted. The 'sN' type says to use N spaces for indentation, while
+  't' says to use tabs.
+
+  Example: format-c test.c -n4 -is3
 ```
 
 ## Node Module
 
 ```javascript
-var SimpleCStream = require('c-format-stream');
-var formattedStream = getReadableStreamSomehow().pipe(new SimpleCStream({
-  stuff: "yeah",
-  other_stuff: "that too",
-  even_this: "hell yeah"
+var FormatCStream = require('format-c-stream');
+var formattedStream = getReadableStreamSomehow().pipe(new FormatCStream({
+  numNewlinesToPreserve: 3,
+  indentationString: "\t"
 }));
 
 // fires when stream has no more data
-objectStream.on('end', function(){
+formattedStream.on('end', function(){
   doSomethingWhenStreamIsDone();
 });
 
-// lots of other stream-related nonsense
+// an error has occurred
+formattedStream.on('error', function(err){
+  console.error(err);
+});
 ```
 
 # LICENSE
