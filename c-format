@@ -2,4 +2,4 @@
 
 WD=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-node "$WD/../lib/node_modules/c-format-stream/c-format/obj/c-format.js" $@
+node "$WD/../lib/node_modules/c-format-stream/obj/c-format.js" $@
