@@ -1,6 +1,6 @@
 fs = require 'fs'
 
-FormatCStream = require "#{__dirname}/c-format-stream"
+CFormatStream = require "#{__dirname}/c-format-stream"
 
 parseIndentStr = (str) ->
   if str.charAt(0) is "s"
@@ -18,7 +18,7 @@ process.argv.shift()
 # manually parsing options cause we have so few
 if process.argv.indexOf("-h") isnt -1 or process.argv.length is 1
   console.error '''
-  Usage: format-c INFILE [OUTFILE] [-hvni]
+  Usage: c-format INFILE [OUTFILE] [-hvni]
 
   INFILE should be "-" for stdin. OUTFILE defaults to stdout.
 
@@ -31,13 +31,13 @@ if process.argv.indexOf("-h") isnt -1 or process.argv.length is 1
   integer, or 't' are accepted. The 'sN' type says to use N spaces for
   indentation, while 't' says to use tabs.
 
-  Example: format-c test.c -n4 -is3
+  Example: c-format test.c -n4 -is3
   '''
   process.exit -1
 else if process.argv.indexOf("-v") isnt -1
   fs.readFile "#{__dirname}/package.json", (err, file) ->
     throw err if err
-    console.log "format-c version #{JSON.parse(file.toString()).version}"
+    console.log "c-format version #{JSON.parse(file.toString()).version}"
     process.exit 0
 else
   if process.argv[1] isnt "-"
@@ -95,7 +95,7 @@ else
       "N -is some positive number (for a number of spaces), or \"t\", which " +
       "means tabs."
       process.exit -1
-  formatStream = new FormatCStream opts
+  formatStream = new CFormatStream opts
   formatStream.on 'error', (err) ->
     console.error "Error encountered within internal formatting stream."
     console.error err
