@@ -2,4 +2,4 @@
 
 WD=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-"$WD/../lib/c-format-stream/c-format" $@
+"$WD/../lib/node_modules/c-format-stream/c-format" $@
