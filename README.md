@@ -1,4 +1,4 @@
-format-c
+c-format
 ========
 
 A Transform stream to format C and C-like code.
@@ -8,9 +8,9 @@ A Transform stream to format C and C-like code.
 ## Command-line
 
 ```bash
-$ format-c -h
+$ c-format -h
 
-  Usage: format-c INFILE [OUTFILE] [-hvni]
+  Usage: c-format INFILE [OUTFILE] [-hvni]
 
   INFILE should be "-" for stdin. OUTFILE defaults to stdout.
 
@@ -23,14 +23,14 @@ $ format-c -h
   or 't' are accepted. The 'sN' type says to use N spaces for indentation, while
   't' says to use tabs.
 
-  Example: format-c test.c -n4 -is3
+  Example: c-format test.c -n4 -is3
 ```
 
 ## Node Module
 
 ```javascript
-var FormatCStream = require('format-c-stream');
-var formattedStream = getReadableStreamSomehow().pipe(new FormatCStream({
+var CFormatStream = require('c-format-stream');
+var formattedStream = getReadableStreamSomehow().pipe(new CFormatStream({
   numNewlinesToPreserve: 3, // cuts off after this. enter 0 to destroy all newlines
   indentationString: "\t"   // use tabs for indentation
 }));

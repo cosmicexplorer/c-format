@@ -1,6 +1,6 @@
 fs = require 'fs'
 
-FormatCStream = require "#{__dirname}/format-c-stream"
+FormatCStream = require "#{__dirname}/c-format-stream"
 
 parseIndentStr = (str) ->
   if str.charAt(0) is "s"

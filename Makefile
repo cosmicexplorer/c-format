@@ -1,9 +1,9 @@
 .PHONY: all clean distclean check install
 
-SRC = format-c.coffee format-c-stream.coffee
+SRC = c-format.coffee c-format-stream.coffee
 OBJ = $(patsubst %.coffee, obj/%.js, $(SRC))
 
-DRIVER = format-c
+DRIVER = c-format
 DRIVER_JS = $(patsubst %, obj/%.js, $(DRIVER))
 
 TEST_IN = test/problem_a.cpp
@@ -39,11 +39,11 @@ distclean: clean
 	@rm -rf $(DEPS)
 
 test/%_test_out.cpp: test/%.cpp all
-	./format-c $< $@ -n0
+	./c-format $< $@ -n0
 
 check: $(TEST_OUT)
 	diff $(TEST_CHECK) $(TEST_OUT)
 
 install: all
 	cp -r . /usr/bin
-	ln -s /usr/bin/format-c/format-c /usr/bin/format-c
+	ln -s /usr/bin/c-format/c-format /usr/bin/c-format
