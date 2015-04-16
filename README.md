@@ -1,13 +1,15 @@
 c-format-stream
 ===============
 
-A Transform stream to format C and C-like code.
+A Transform stream to format C and C-like code. It's intended to work like clang-format, but it's a lot more opinionated (and, you'll find, somewhat dumber, although there are some cool benefits). It's mostly intended as a cleaning tool for preprocessors such as [compp](https://github.com/cosmicexplorer/compp), but you'll find it also works well on its own if you need a standalone C formatter to plug into your other scripts. It scrubs the input with regex and then applies indentation and newlines as necessary.
 
 # Usage
 
 ## Command-line
 
-```bash
+Install with `npm install -g c-format-stream`. The binary is named `c-format`.
+
+```shell
 $ c-format -h
 
   Usage: c-format INFILE [OUTFILE] [-hvni]
@@ -31,7 +33,8 @@ $ c-format -h
 ```javascript
 var CFormatStream = require('c-format-stream');
 var formattedStream = getReadableStreamSomehow().pipe(new CFormatStream({
-  numNewlinesToPreserve: 3, // cuts off after this. enter 0 to destroy all newlines
+  numNewlinesToPreserve: 3, // cuts off after this
+                            // enter 0 to destroy all empty newlines
   indentationString: "\t"   // use tabs for indentation
 }));
 
@@ -40,11 +43,17 @@ formattedStream.on('end', function(){
   doSomethingWhenStreamIsDone();
 });
 
-// an error has occurred
+// an error has occurred! >=(
 formattedStream.on('error', function(err){
-  console.error(err);
+  doSomethingOnError(err);
 });
 ```
+
+As it inherits from the Transform stream interface, this stream can use both the standard readable and writable interfaces detailed in the [node documentation](https://nodejs.org/api/stream.html).
+
+## Applications
+
+This was written to help test [compp](https://github.com/cosmicexplorer/compp), the preprocessor part of [composter](https://github.com/cosmicexplorer/composter), a C compiler written in coffeescript. Both are in active development, so feel free to check out either of those two projects if you're interested in this one.
 
 # LICENSE
 
