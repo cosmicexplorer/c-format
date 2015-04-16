@@ -23,13 +23,13 @@ $(DEPS):
 	@npm install
 
 clean:
-	@rm -f $(OBJ) $(DRIVER)
+	@rm -f $(OBJ)
 
 distclean: clean
 	@rm -rf $(DEPS)
 
 test/%_test_out.cpp: test/%.cpp all
-	./c-format $< $@ -n0
+	node obj/c-format.js $< $@ -n0
 
 check: $(TEST_OUT)
 	diff $(TEST_CHECK) $(TEST_OUT)
