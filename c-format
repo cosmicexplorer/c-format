@@ -1,7 +1,5 @@
 #!/bin/sh
-# generated driver script
-WD=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-driver="$(echo  obj/c-format.js)"
 
-# pass all arguments as args to node process
-node "$WD/$driver" $@
+WD=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
+"$WD/../lib/c-format-stream/c-format" $@
