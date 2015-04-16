@@ -18,17 +18,6 @@ class FormatCStream extends Transform
     @indentationString = opts?.indentationString or "  "
     @delimiterStack = []
 
-    # this is set so _transform knows when to break off each chunk and feed it
-    # into @baseTransformFunc and indentAndNewline
-    @blockStatus = null
-    # this contains the status of the stream saved from previous inputs
-    @interstitialBuffer = []
-
-    # process in blocks of top-level declarations:
-    # 1. preprocessor defines at top level
-    # 2. function definitions and namespace declarations
-    # 3. class/function declarations
-
     # emit 'end' on end of input
     cb = =>
       @emit 'end'
@@ -221,73 +210,9 @@ class FormatCStream extends Transform
   _transform : (chunk, enc, cb) ->
     str = chunk.toString()
     @push(@indentAndNewline(FormatCStream.baseTransformFunc(str)))
-    # cb?()
-    # c = ""
-    # for i in [0..(str.length - 1)]
-    #   c = str.charAt(i)
-    #   @interstitialBuffer.push c
-    #   if @blockStatus is null
-    #     if c is "{"
-    #       @blockStatus =
-    #         type: "{"
-    #         num: 1
-    #     if c is "#"
-    #       @blockStatus =
-    #         type: "#"
-    #     if c is ";"
-    #       @push(@indentAndNewline(FormatCStream.baseTransformFunc(
-    #         @interstitialBuffer.join(""))))
-    #       @blockStatus = null
-    #       @interstitialBuffer = []
-    #   else
-    #     if @blockStatus.type is "{"
-    #       if c is "}"
-    #         --@blockStatus.num
-    #       else if c is "{"
-    #         ++@blockStatus.num
-    #       if @blockStatus.num is 0
-    #         @push(@indentAndNewline(FormatCStream.baseTransformFunc(
-    #           @interstitialBuffer.join(""))))
-    #         @blockStatus = null
-    #         @interstitialBuffer = []
-    #     else if @blockStatus.type is "#" and c is "\n"
-    #       @push(@indentAndNewline(FormatCStream.baseTransformFunc(
-    #         @interstitialBuffer.join(""))))
-    #       @blockStatus = null
-    #       @interstitialBuffer = []
-
-    # blockStart = 0
-    # for i in [0..(str.length - 1)]
-    #   if not @blockStatus
-    #     if str.charAt(i) is "{" or
-    #        str.charAt(i) is "\#" # backslash not required, but nice
-    #       # console.error "-----#{str[0..30]}---"
-    #       @blockStatus =
-    #         type: str.charAt(i)
-    #         num: 1
-    #     else if str.charAt(i) is ";"
-    #       @push(@indentAndNewline(FormatCStream.baseTransformFunc(
-    #         @interstitialBuffer + str.substr(blockStart, i + 1))))
-    #       @interstitialBuffer = ""
-    #       blockStart = i + 1
-    #   else
-    #     if @blockStatus.type is "{" and str.charAt(i) is "}"
-    #       --@blockStatus.num
-    #     if @blockStatus.type is "{" and str.charAt(i) is "{"
-    #       ++@blockStatus.num
-    #     if @blockStatus.type is "#" and str.charAt(i) is "\n" or
-    #        @blockStatus.type is "{" and @blockStatus.num is 0
-    #       @blockStatus = null
-    #       @push(@indentAndNewline(FormatCStream.baseTransformFunc(
-    #         @interstitialBuffer + str.substr(blockStart, i + 1))))
-    #       @interstitialBuffer = ""
-    #       blockStart = i + 1
-    # @interstitialBuffer = str.substr blockStart
-    # @push @indentAndNewline FormatCStream.baseTransformFunc str
+    cb?()
 
   _flush : (cb) ->
-    @push(@indentAndNewline(FormatCStream.baseTransformFunc(
-      @interstitialBuffer.join(""))))
     if @prevCharArr[@prevCharArr.length - 1] isnt "\n"
       @push "\n"                  # file ends in newline!
     cb?()
