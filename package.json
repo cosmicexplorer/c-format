@@ -1,6 +1,6 @@
 {
   "name": "c-format-stream",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "A Transform stream which formats C-like code.",
   "main": "obj/c-format-stream.js",
   "bin": {
@@ -12,7 +12,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/cosmicexplorer/c-format.git"
+    "url": "git://github.com/cosmicexplorer/c-format-stream.git"
   },
   "keywords": [
     "stream",
@@ -27,9 +27,9 @@
   "author": "Danny McClanahan <danieldmcclanahan@gmail.com>",
   "license": "GPL v3",
   "bugs": {
-    "url": "https://github.com/cosmicexplorer/c-format/issues"
+    "url": "https://github.com/cosmicexplorer/c-format-stream/issues"
   },
-  "homepage": "https://github.com/cosmicexplorer/c-format",
+  "homepage": "https://github.com/cosmicexplorer/c-format-stream",
   "devDependencies": {
     "coffee-script": "^1.9.1"
   },
