@@ -275,7 +275,6 @@ class FormatCStream extends Transform
             type: "#"
         if c is ";"
           @push "\n" if @prevCharArr[@prevCharArr.length - 1] isnt "\n"
-          # @push "^__^"
           @push(@indentAndNewline(@baseTransformFunc(
             @interstitialBuffer.join(""))))
           @blockStatus = null
@@ -288,14 +287,12 @@ class FormatCStream extends Transform
             ++@blockStatus.num
           if @blockStatus.num is 0
             @push "\n" if @prevCharArr[@prevCharArr.length - 1] isnt "\n"
-            # @push "^__^"
             @push(@indentAndNewline(@baseTransformFunc(
               @interstitialBuffer.join(""))))
             @blockStatus = null
             @interstitialBuffer = []
         else if @blockStatus.type is "#" and c is "\n"
           @push "\n" if @prevCharArr[@prevCharArr.length - 1] isnt "\n"
-          # @push "^__^"
           @push(@indentAndNewline(@baseTransformFunc(
             @interstitialBuffer.join(""))))
           @blockStatus = null
