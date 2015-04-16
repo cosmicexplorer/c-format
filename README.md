@@ -21,9 +21,9 @@ $ c-format -h
   -n number of newlines to preserve
   -i type of indentation string
 
-  For the '-i' argument, strings of type 'sN', where N is some positive integer,
-  or 't' are accepted. The 'sN' type says to use N spaces for indentation, while
-  't' says to use tabs.
+  For the '-i' argument, strings of type 'sN', where N is some
+  nonnegative integer, or 't' are accepted. The 'sN' type says
+  to use N spaces for indentation, while 't' says to use tabs.
 
   Example: c-format test.c -n4 -is3
 ```
