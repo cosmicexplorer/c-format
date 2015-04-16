@@ -6,6 +6,10 @@ OBJ = $(patsubst %.coffee, obj/%.js, $(SRC))
 DRIVER = format-c
 DRIVER_JS = $(patsubst %, obj/%.js, $(DRIVER))
 
+TEST_IN = test/problem_a.cpp
+TEST_CHECK = $(patsubst %.cpp, %_check_out.cpp, $(TEST_IN))
+TEST_OUT = $(patsubst %.cpp, %_test_out.cpp, $(TEST_IN))
+
 DEPS = node_modules
 
 all: $(DRIVER)
@@ -33,10 +37,12 @@ clean:
 distclean: clean
 	@rm -rf $(DEPS)
 
-check: all
-	@echo "error: no check target yet" 1>&2
-	@exit -1
+test/%_test_out.cpp: test/%.cpp all
+	./format-c $< $@ -n0
+
+check: $(TEST_OUT)
+	diff $(TEST_CHECK) $(TEST_OUT)
 
 install: all
-	@echo "error: no install target yet" 1>&2
-	@exit -1
+	cp -r . /usr/bin
+	ln -s /usr/bin/format-c/format-c /usr/bin/format-c
