@@ -1,6 +1,6 @@
 {
   "name": "c-format-stream",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A Transform stream which formats C-like code.",
   "main": "obj/c-format-stream.js",
   "bin": "./c-format",

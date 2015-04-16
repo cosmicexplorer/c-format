@@ -12,17 +12,7 @@ TEST_OUT = $(patsubst %.cpp, %_test_out.cpp, $(TEST_IN))
 
 DEPS = node_modules
 
-all: $(DRIVER)
-
-$(DRIVER): $(DEPS) $(OBJ)
-	@echo "#!/bin/sh" > $@
-	@echo "# generated driver script" >> $@
-	@echo "WD=\$$(cd \"\$$(dirname \"\$${BASH_SOURCE[0]}\")\" && pwd)" >> $@
-	@echo "driver=\"\$$(echo $(DRIVER_JS))\"" >> $@
-	@echo >> $@
-	@echo "# pass all arguments as args to node process" >> $@
-	@echo "node \"\$$WD/\$$driver\" \$$@" >> $@
-	@chmod +x $@
+all: $(DEPS) $(OBJ)
 
 obj/%.js: %.coffee
 	@./install_coffee_if_not.sh
