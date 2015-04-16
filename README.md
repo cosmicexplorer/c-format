@@ -1,5 +1,5 @@
-c-format
-========
+c-format-stream
+===============
 
 A Transform stream to format C and C-like code.
 
