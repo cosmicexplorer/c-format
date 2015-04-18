@@ -245,7 +245,8 @@ class FormatCStream extends Transform
         openingDelim = @delimiterStack.pop()
         if FormatCStream.getClosingDelim(openingDelim) isnt c
           @emit 'error',
-          "Your delimiters aren't matched correctly and this won't compile."
+          new Error "Your delimiters aren't matched correctly and this won't
+  compile."
       if not @noNewlines
         tooManyNewlines = c is "\n"
         for i in [1..@numNewlinesToPreserve] by 1
