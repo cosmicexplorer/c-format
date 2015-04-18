@@ -9,7 +9,6 @@ OBJ = $(patsubst $(SRC_DIR)/%.coffee, $(OBJ_DIR)/%.js, $(SRC_PATH))
 BIN_DIR = bin
 DRIVER = c-format
 BIN_DRIVER = $(BIN_DIR)/$(DRIVER)
-DRIVER_JS = $(patsubst %, $(OBJ_DIR)/%.js, $(DRIVER))
 
 TEST_DIR = test
 TEST_IN = $(TEST_DIR)/problem_a.cpp
