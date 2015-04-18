@@ -50,28 +50,28 @@ class FormatCStream extends Transform
   @leadingWhitespaceRegex: /^\s+/gm
   @trailingWhitespaceRegex: /\s+$/gm
 
-  @isOpenDelim : (c) ->
+  @isOpenDelim: (c) ->
     switch c
       when "(" then yes
       when "[" then yes
       when "{" then yes
       else no
 
-  @isCloseDelim : (c) ->
+  @isCloseDelim: (c) ->
     switch c
       when "}" then yes
       when "]" then yes
       when ")" then yes
       else no
 
-  @getClosingDelim : (openDelim) ->
+  @getClosingDelim: (openDelim) ->
     switch openDelim
       when "(" then ")"
       when "[" then "]"
       when "{" then "}"
       else null
 
-  baseTransformFunc : (str) ->
+  baseTransformFunc: (str) ->
     str
       # preprocessing: remove all leading whitespace (this looks complex but
       # simpler methods weren't working for some reason)
@@ -260,7 +260,7 @@ class FormatCStream extends Transform
       @prevCharArr.push c
     out.join("")
 
-  _transform : (chunk, enc, cb) ->
+  _transform: (chunk, enc, cb) ->
     str = chunk.toString()
     c = ""
     for i in [0..(str.length - 1)]
@@ -300,7 +300,7 @@ class FormatCStream extends Transform
           @interstitialBuffer = []
     cb?()
 
-  _flush : (cb) ->
+  _flush: (cb) ->
     @push(@indentAndNewline(@baseTransformFunc(
       @interstitialBuffer.join(""))))
     if @prevCharArr[@prevCharArr.length - 1] isnt "\n"
