@@ -39,7 +39,8 @@ module.exports =
       '''
       process.exit -1
     else if process.argv.indexOf("-v") isnt -1
-      fs.readFile "#{__dirname}/package.json", (err, file) ->
+      # N.B.: this pathname is tightly coupled with the source tree!
+      fs.readFile "#{__dirname}/../../package.json", (err, file) ->
         throw err if err
         console.log "c-format version #{JSON.parse(file.toString()).version}"
         process.exit 0
