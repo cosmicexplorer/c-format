@@ -1,39 +1,48 @@
 .PHONY: all clean distclean check install
 
 SRC = c-format.coffee c-format-stream.coffee
-OBJ = $(patsubst %.coffee, obj/%.js, $(SRC))
+SRC_DIR = src
+SRC_PATH = $(patsubst %, $(SRC_DIR)/%, $(SRC))
+OBJ_DIR = lib/c-format-stream
+OBJ = $(patsubst $(SRC_DIR)/%.coffee, $(OBJ_DIR)/%.js, $(SRC_PATH))
 
+BIN_DIR = bin
 DRIVER = c-format
-DRIVER_JS = $(patsubst %, obj/%.js, $(DRIVER))
+BIN_DRIVER = $(BIN_DIR)/$(DRIVER)
+DRIVER_JS = $(patsubst %, $(OBJ_DIR)/%.js, $(DRIVER))
 
-TEST_IN = test/problem_a.cpp
+TEST_DIR = test
+TEST_IN = $(TEST_DIR)/problem_a.cpp
 TEST_CHECK = $(patsubst %.cpp, %_check_out.cpp, $(TEST_IN))
 TEST_OUT = $(patsubst %.cpp, %_test_out.cpp, $(TEST_IN))
 
 DEPS = node_modules
 
-all: $(DEPS) $(OBJ)
+all: $(BIN_DRIVER)
 
-obj/%.js: %.coffee
+$(BIN_DRIVER): $(DEPS) $(OBJ)
+	@cp $(BIN_DIR)/c-format-stub $(BIN_DIR)/c-format
+	@chmod +x $(BIN_DIR)/c-format
+
+$(OBJ_DIR)/%.js: $(SRC_DIR)/%.coffee
 	@./install_coffee_if_not.sh
-	coffee -o obj -bc $<
+	coffee -o $(OBJ_DIR) -bc $<
 
 $(DEPS):
 	@echo "Install required packages..."
 	@npm install
 
 clean:
-	@rm -f $(OBJ)
+	@rm -f $(OBJ) $(TEST_OUT) $(BIN_DRIVER)
 
 distclean: clean
 	@rm -rf $(DEPS)
 
-test/%_test_out.cpp: test/%.cpp all
-	node obj/c-format.js $< $@ -n0
+$(TEST_DIR)/%_test_out.cpp: $(TEST_DIR)/%.cpp all
+	$(BIN_DIR)/c-format $< $@ -n0
 
 check: $(TEST_OUT)
 	diff $(TEST_CHECK) $(TEST_OUT)
 
 install: all
-	cp -r . /usr/bin
-	ln -s /usr/bin/c-format/c-format /usr/bin/c-format
+	npm install -g

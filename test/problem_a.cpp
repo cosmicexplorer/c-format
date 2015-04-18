@@ -49,6 +49,10 @@ int main() {
     std::getline(std::cin, curInput);
 
 
+
+
+
+
 /* test
 multi-line
 commment */

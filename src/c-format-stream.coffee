@@ -9,10 +9,10 @@ class FormatCStream extends Transform
       Transform.call @, opts
 
     if opts?.numNewlinesToPreserve is 0
-      @noNewlines = true
+      @noNewlines = yes
       @numNewlinesToPreserve = 0
     else
-      @noNewlines = false
+      @noNewlines = no
       @numNewlinesToPreserve = opts?.numNewlinesToPreserve + 1 or 2
     @prevCharArrSize = 3
     if @numNewlinesToPreserve > @prevCharArrSize
@@ -52,17 +52,17 @@ class FormatCStream extends Transform
 
   @isOpenDelim : (c) ->
     switch c
-      when "(" then true
-      when "[" then true
-      when "{" then true
-      else false
+      when "(" then yes
+      when "[" then yes
+      when "{" then yes
+      else no
 
   @isCloseDelim : (c) ->
     switch c
-      when "}" then true
-      when "]" then true
-      when ")" then true
-      else false
+      when "}" then yes
+      when "]" then yes
+      when ")" then yes
+      else no
 
   @getClosingDelim : (openDelim) ->
     switch openDelim
