@@ -20,7 +20,7 @@ DEPS = node_modules
 all: $(BIN_DRIVER)
 
 $(BIN_DRIVER): $(DEPS) $(OBJ)
-	@cp $(BIN_DIR)/c-format-stub $(BIN_DIR)/c-format
+	@cp $(BIN_DIR)/$(DRIVER)-stub $(BIN_DIR)/$(DRIVER)
 	@chmod +x $(BIN_DIR)/c-format
 
 $(OBJ_DIR)/%.js: $(SRC_DIR)/%.coffee
