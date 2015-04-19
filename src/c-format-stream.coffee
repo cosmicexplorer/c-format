@@ -34,17 +34,11 @@ class CFormatStream extends Transform
     # this contains the status of the stream saved from previous inputs
     @interstitialBuffer = []
 
-    # emit 'end' on end of input
-    cbEnd = =>
-      @emit 'end'
-    # same for 'error'
     cbError = (err) =>
       @emit 'error', err
     @on 'pipe', (src) =>
-      src.on 'end', cbEnd
       src.on 'error', cbError
     @on 'unpipe', (src) =>
-      src.removeListener 'end', cbEnd
       src.removeListener 'error', cbError
 
   @leadingWhitespaceRegex: /^\s+/gm
