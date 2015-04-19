@@ -1,10 +1,10 @@
 Transform = require('stream').Transform
 
 module.exports =
-class FormatCStream extends Transform
+class CFormatStream extends Transform
   constructor: (opts) ->
-    if not @ instanceof FormatCStream
-      return new FormatCStream
+    if not @ instanceof CFormatStream
+      return new CFormatStream
     else
       Transform.call @, opts
 
@@ -175,8 +175,8 @@ class FormatCStream extends Transform
           "#{g1} <#{g2}>")
       # keep template args cuddled within <>
       .replace(/<\s*([^\n\0\x01>]*)\s*>/g, (str, g1) ->
-        res = g1.replace(FormatCStream.leadingWhitespaceRegex, "")
-          .replace(FormatCStream.trailingWhitespaceRegex, "")
+        res = g1.replace(@constructor.leadingWhitespaceRegex, "")
+          .replace(@constructor.trailingWhitespaceRegex, "")
         "<#{res}>")
       # newline after open brace, close brace, semicolon
       .replace(/([\{\};])([^\n\0\x01])/g, (str, g1, g2) -> "#{g1}\n#{g2}")
@@ -231,19 +231,19 @@ class FormatCStream extends Transform
       # we have verified in ctor that @prevCharArr.length > 0
       if @prevCharArr[@prevCharArr.length - 1] is "\n"
         if c isnt "\n"
-          if FormatCStream.isCloseDelim c
+          if @constructor.isCloseDelim c
             for i in [0..(@delimiterStack.length - 2)] by 1
               out.push @indentationString
           else
             for i in [0..(@delimiterStack.length - 1)] by 1
               # add levels of indentation
               out.push @indentationString
-      if FormatCStream.isOpenDelim c
+      if @constructor.isOpenDelim c
         @delimiterStack.push c
-      else if FormatCStream.isCloseDelim c
+      else if @constructor.isCloseDelim c
         # for some reason short-circuit evaluation isn't working here...
         openingDelim = @delimiterStack.pop()
-        if FormatCStream.getClosingDelim(openingDelim) isnt c
+        if @constructor.getClosingDelim(openingDelim) isnt c
           @emit 'error',
           new Error "Your delimiters aren't matched correctly and this won't
   compile."
