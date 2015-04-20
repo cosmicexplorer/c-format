@@ -1,6 +1,6 @@
 {
   "name": "c-format-stream",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "description": "A Transform stream which formats C-like code.",
   "main": "lib/c-format-stream/c-format-stream.js",
   "bin": {

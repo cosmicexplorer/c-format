@@ -300,8 +300,8 @@ class CFormatStream extends Transform
     cb?()
 
   _flush: (cb) ->
-    @push(@indentAndNewline(@baseTransformFunc(
-      @interstitialBuffer.join(""))))
+    @push @indentAndNewline(@baseTransformFunc(
+      @interstitialBuffer.join("")))
     if @prevCharArr[@prevCharArr.length - 1] isnt "\n"
       @push "\n"                  # file ends in newline!
     cb?()
