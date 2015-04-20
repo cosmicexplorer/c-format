@@ -161,17 +161,17 @@ class CFormatStream extends Transform
           "#{g1}#{g2} ="
         else
           "#{g1}#{g2}=")
-      # template <>, not template<>
+      # 'template <>', not template<>
       .replace(/([^\s]+)\s+<([^\n\0\x01>]*)>/g, (str, g1, g2) ->
         if g1 isnt "template"
           "#{g1}<#{g2}>"
         else
           "#{g1} <#{g2}>")
+      # '#include <stdio.h>', not '#include<stdio.h>'
+      .replace(/^#\s*include(<.*>)/gm, (str, g1) -> "#include #{g1}")
       # keep template args cuddled within <>
-      .replace(/<\s*([^\n\0\x01>]*)\s*>/g, (str, g1) ->
-        res = g1.replace(@constructor.leadingWhitespaceRegex, "")
-          .replace(@constructor.trailingWhitespaceRegex, "")
-        "<#{res}>")
+      .replace(/<\s+([^\n\0\x01>]*)>/g, (str, g1) -> "<#{g1}>")
+      .replace(/<([^\n\0\x01>]*)\s+>/g, (str, g1) -> "<#{g1}>")
       # newline after open brace, close brace, semicolon
       .replace(/([\{\};])([^\n\0\x01])/g, (str, g1, g2) -> "#{g1}\n#{g2}")
       # finally, put back those preprocessor defines
@@ -216,6 +216,11 @@ class CFormatStream extends Transform
           if ch is "\n"
             outArr.push ch
         outArr.join "")
+      # keep template args cuddled within <>
+      # .replace(/<\s*([^\s\0\x01>]*)\s*>/g, (str, g1) ->
+      #   console.error "AA"
+      #   console.error ">-#{g1}-<"
+      #   "<#{g1}>")
 
   # this one can't be static since it manipulates the stream state
   indentAndNewline: (str) ->
