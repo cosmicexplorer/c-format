@@ -4,7 +4,7 @@ module.exports =
 class CFormatStream extends Transform
   constructor: (opts) ->
     if not @ instanceof CFormatStream
-      return new CFormatStream
+      return new CFormatStream opts
     else
       Transform.call @, opts
 
