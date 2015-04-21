@@ -1,7 +1,7 @@
-#include<iostream>
-#include<string>
-#include<vector>
-#include<cctype>
+#include <iostream>
+#include <string>
+#include <vector>
+#include <cctype>
 std::vector<size_t> parseShynessesVector(std::string input)
 {
   std::vector<size_t> res;

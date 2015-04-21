@@ -216,13 +216,7 @@ class CFormatStream extends Transform
           if ch is "\n"
             outArr.push ch
         outArr.join "")
-      # keep template args cuddled within <>
-      # .replace(/<\s*([^\s\0\x01>]*)\s*>/g, (str, g1) ->
-      #   console.error "AA"
-      #   console.error ">-#{g1}-<"
-      #   "<#{g1}>")
 
-  # this one can't be static since it manipulates the stream state
   indentAndNewline: (str) ->
     # let's do indentation!
     out = []
@@ -244,8 +238,8 @@ class CFormatStream extends Transform
         openingDelim = @delimiterStack.pop()
         if @constructor.getClosingDelim(openingDelim) isnt c
           @emit 'error',
-          new Error "Your delimiters aren't matched correctly and this won't
-  compile."
+          new Error "Your delimiters aren't matched correctly and this won't " +
+          "compile."
       if not @noNewlines
         tooManyNewlines = c is "\n"
         for i in [1..@numNewlinesToPreserve] by 1
