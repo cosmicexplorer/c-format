@@ -19,7 +19,9 @@ module.exports =
     process.argv.shift()
 
     # manually parsing options cause we have so few
-    if process.argv.indexOf("-h") isnt -1 or process.argv.length is 1
+    if process.argv.indexOf("-h") isnt -1 or
+       process.argv.indexOf("--help") isnt -1
+       process.argv.length is 1
       console.error '''
       Usage: c-format INFILE [OUTFILE] [-hvni]
 
