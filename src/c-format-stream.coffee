@@ -154,7 +154,7 @@ class CFormatStream extends Transform
           "#{g1}(")
       # no space before semicolon
       .replace(/\s+;/g, ";")
-      # except NO space in between +=, -=, *=, /=
+      # except NO space in between +=, -=, *=, /=, !=, ==
       .replace(/(.)([!=\+\-\*\/])\s+=/g, (str, g1, g2) ->
         if (g1 is "+" and g2 is "+") or
            (g1 is "-" and g2 is "-")
