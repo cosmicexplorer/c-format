@@ -55,8 +55,17 @@ int main()
     ++tests)
   {
     std::getline(std::cin, curInput);
+    bool logical = false;
+    if(logical == true)
+    {
+      std::cout << "wow!" << std::endl;
+    }
+    if(logical != false)
+    {
+      std::cout << "huh!" << std::endl;
+    }
     /*
-    test multi - line commment 
+    test multi - line commment
     */
     indexOfSpace = curInput.find(' ');
     // asdf

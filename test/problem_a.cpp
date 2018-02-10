@@ -48,8 +48,13 @@ int main() {
   for (size_t tests = 0; tests < numTests; ++tests) {
     std::getline(std::cin, curInput);
 
-
-
+    bool logical = false;
+    if (logical == true) {
+      std::cout << "wow!" << std::endl;
+    }
+    if (logical != false) {
+      std::cout << "huh!" << std::endl;
+    }
 
 
 

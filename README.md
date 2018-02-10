@@ -57,4 +57,4 @@ This was written to help test [compp](https://github.com/cosmicexplorer/compp), 
 
 # LICENSE
 
-GPL v3
+[GPL 3.0+](./LICENSE)

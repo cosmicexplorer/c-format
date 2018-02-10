@@ -40,9 +40,9 @@ clean:
 distclean: clean
 	@rm -rf $(DEPS)
 
-$(TEST_DIR)/%_test_out.cpp: $(TEST_DIR)/%_check_out.cpp all
+$(TEST_DIR)/%_test_out.cpp: $(TEST_DIR)/%.cpp $(TEST_DIR)/%_check_out.cpp all
 	$(BIN_DRIVER) $< $@ -n0 -is2
-	diff $< $@
+	diff $@ $(word 2,$^)
 
 check: $(TEST_OUT)
 

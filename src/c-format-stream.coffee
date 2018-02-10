@@ -155,7 +155,7 @@ class CFormatStream extends Transform
       # no space before semicolon
       .replace(/\s+;/g, ";")
       # except NO space in between +=, -=, *=, /=
-      .replace(/(.)([\+\-\*\/])\s+=/g, (str, g1, g2) ->
+      .replace(/(.)([!=\+\-\*\/])\s+=/g, (str, g1, g2) ->
         if (g1 is "+" and g2 is "+") or
            (g1 is "-" and g2 is "-")
           "#{g1}#{g2} ="
@@ -216,6 +216,8 @@ class CFormatStream extends Transform
           if ch is "\n"
             outArr.push ch
         outArr.join "")
+      # no trailing whitespace
+      .replace(/([^\s])\s+$/gm, (str, g1) -> "#{g1}")
 
   indentAndNewline: (str) ->
     # let's do indentation!
