@@ -1,7 +1,7 @@
 c-format-stream
 ===============
 
-A Transform stream to format C and C-like code. It's intended to work like clang-format, but it's a lot more opinionated (and, you'll find, somewhat dumber, although there are some cool benefits). It's mostly intended as a cleaning tool for preprocessors such as [compp](https://github.com/cosmicexplorer/compp), but you'll find it also works well on its own if you need a standalone C formatter to plug into your other scripts. It scrubs the input with regex and then applies indentation and newlines as necessary.
+A Transform stream to format C and C-like code. It's intended to work like clang-format, but it's a lot more opinionated (and, you'll find, somewhat less effective, although there are some cool benefits). It's mostly intended as a cleaning tool for preprocessors such as [compp](https://github.com/cosmicexplorer/compp), but you'll find it also works well on its own if you need a standalone C formatter to plug into your other scripts. It scrubs the input with regex and then applies indentation and newlines as necessary.
 
 # Usage
 
